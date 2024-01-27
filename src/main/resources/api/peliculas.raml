@@ -1,0 +1,204 @@
+#%RAML 1.0
+title: "API de base de datos de peliculas"
+description: "API que administra la informaci\u00F3n de la base de datos de pel\u00EDculas. "
+mediaType:
+  - application/json
+version: "1"
+protocols:
+  - HTTP
+types:
+  usuario:
+    description: Usuario del sistema.
+    properties:
+      usuario:
+        example: Example
+        type: string
+      contrasenia:
+        example: Example
+        type: string
+      permisos:
+        items:
+          type: string
+  actor:
+    description: actor que interpreta el personaje.
+    properties:
+      nombrePersonaje:
+        example: Example
+        type: string
+      nombreActor:
+        example: Example
+        type: string
+  reparto:
+    items:
+      type: actor
+  pelicula:
+    properties:
+      titulo:
+        example: Example
+        type: string
+      anioLanzamiento:
+        example: 2024-01-23
+        type: date-only
+      genero:
+        example: Example
+        type: string
+      director:
+        example: Example
+        type: string
+      reparto:
+        type: reparto
+        items:
+          type: actor
+  respuestapredefinida:
+    properties:
+      codigo:
+        example: 1
+        type: number
+        format: int
+      mensaje:
+        example: Example
+        type: string
+  actualizarpelicula:
+    properties:
+      id:
+        example: 1
+        type: number
+      titulo:
+        example: Example
+        type: string
+      anioLanzamiento:
+        example: 2024-01-23
+        type: date-only
+      genero:
+        example: Example
+        type: string
+      director:
+        example: Example
+        type: string
+      reparto:
+        type: reparto
+        items:
+          type: actor
+baseUri: localhost:8081/
+/peliculas:
+  get:
+    displayName: listarPeliculas
+    description: Servicio para listar todas las peliculas registradas en el sistema.
+    responses:
+      "200":
+        body:
+          application/json:
+            items:
+              type: pelicula
+      "500":
+        body:
+          application/json:
+            properties:
+              descripcion:
+                example: Example
+                type: string
+              codigo:
+                example: 1
+                type: number
+                format: int
+    securedBy:
+      - OAuth2
+/pelicula:
+  get:
+    displayName: listarPelicula
+    description: Servicio que obtiene la informacion de una pelicula en especifico.
+    queryParameters:
+      idPelicula:
+        example: 1
+        type: number
+        format: int
+    responses:
+      "200":
+        body:
+          application/json:
+            type: pelicula
+    securedBy:
+      - OAuth2
+/agregarpelicula:
+  post:
+    displayName: agregarpelicula
+    description: Servicio que registra una nueva pelicula en la base de datos.
+    body:
+      application/json:
+        type: pelicula
+    responses:
+      "200":
+        body:
+          application/json:
+            type: respuestapredefinida
+      "500":
+        body:
+          application/json:
+            type: respuestapredefinida
+    securedBy:
+      - OAuth2
+/eliminarpelicula:
+  delete:
+    displayName: eliminarpelicula
+    description: Servicio que elimina una pelicula de la base de datos.
+    queryParameters:
+      idpelicula:
+        example: 1
+        type: number
+        format: int
+    responses:
+      "200":
+        body:
+          application/json:
+            type: respuestapredefinida
+      "500":
+        body:
+          application/json:
+            type: respuestapredefinida
+    securedBy:
+      - OAuth2
+/modificarpelicula:
+  put:
+    displayName: modificarpelicula
+    description: Servicio que modifica una pelicula en base de datos.
+    body:
+      application/json:
+        type: actualizarpelicula
+    responses:
+      "200":
+        body:
+          application/json:
+            type: respuestapredefinida
+      "500":
+        body:
+          application/json:
+            type: respuestapredefinida
+    securedBy:
+      - OAuth2
+/ingresarusuario:
+  post:
+    displayName: ingresarusuario
+    description: Servicio que agrega usuario a la base de datos
+    body:
+      application/json:
+        type: usuario
+    responses:
+      "200":
+        body:
+          application/json:
+            type: respuestapredefinida
+      "500":
+        body:
+          application/json:
+            type: respuestapredefinida
+securitySchemes:
+  OAuth2:
+    type: OAuth 2.0
+    description: Token de seguridad basado en Oauth2
+    describedBy:
+      headers:
+        Authorization:
+          example: Example
+          type: string
+securedBy:
+  - OAuth2

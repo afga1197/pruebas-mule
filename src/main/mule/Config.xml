@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:oauth2-provider="http://www.mulesoft.org/schema/mule/oauth2-provider"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/oauth2-provider http://www.mulesoft.org/schema/mule/oauth2-provider/current/mule-oauth2-provider.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<http:listener-config name="HTTP_Listener_config"
+		doc:name="HTTP Listener config"
+		doc:id="a026fc53-55d5-4781-a228-bd6b2588a832">
+		<http:listener-connection host="${http.host}"
+			port="${http.port}" readTimeout="${listener.timeout}" />
+	</http:listener-config>
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="d1821c85-cb7e-4b8f-9343-27df413b5352"
+		file="configuracion_peliculas.properties" />
+	<apikit:config name="peliculas-config"
+		api="peliculas.raml" outboundHeadersMapName="outboundHeaders"
+		httpStatusVarName="httpStatus" />
+	<db:config name="Database_Config_MySQL"
+		doc:name="Database Config"
+		doc:id="759dd113-78f7-4eb4-9f52-77b664499d54">
+		<db:my-sql-connection host="${db.host}"
+			port="${db.port}" user="${db.user}" password="${db.password}"
+			database="${db.database}" />
+	</db:config>
+	<os:object-store name="Object_Store_Client"
+		doc:name="Object store" doc:id="93799266-d3ca-44b9-b4fc-e33d3688026b"
+		expirationIntervalUnit="DAYS" />
+	<os:object-store name="Object_Store_Token" doc:name="Object store" doc:id="ea90ae4f-fe95-4a11-8086-abf286b9d4e3" expirationIntervalUnit="DAYS" />
+	<oauth2-provider:config name="OAuth2_Provider_Config" doc:name="OAuth2 Provider Config" doc:id="dfde0886-422a-480a-90d8-fb1d83785fa4" providerName="OAuth_Provider" listenerConfig="HTTP_Listener_config" clientStore="Object_Store_Client" supportedGrantTypes="CLIENT_CREDENTIALS" scopes="LEER, ESCRIBIR">
+		<oauth2-provider:token-config tokenStore="Object_Store_Token" path="/api/token"/>
+	</oauth2-provider:config>
+	<api-gateway:autodiscovery apiId="19263118" ignoreBasePath="false" doc:name="API Autodiscovery" doc:id="6598cb57-2c85-4f80-b264-cb20702a8b23" flowRef="peliculas-main" />
+</mule>

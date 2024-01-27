@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:oauth2-provider="http://www.mulesoft.org/schema/mule/oauth2-provider" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/oauth2-provider http://www.mulesoft.org/schema/mule/oauth2-provider/current/mule-oauth2-provider.xsd">
+    <flow name="peliculas-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {} ++ {"Version-API":"${version.aplication}"}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="peliculas-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="peliculas-console">
+        <http:listener config-ref="HTTP_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="peliculas-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0 output application/json --- {message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\peliculas:peliculas-config">
+        <oauth2-provider:validate-token doc:name="Validate token" doc:id="40da76cc-1a2c-4240-80bd-7771d7f9aabd" config-ref="OAuth2_Provider_Config" scopes="#[['LEER']]" />
+        <logger level="INFO" message="get:\peliculas:peliculas-config" />
+        <db:select doc:name="Obtener pelicular" doc:id="307eaee3-0360-4f40-8283-9a8c8f210d43" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[SELECT * FROM mule.pelicula p where p.activo = 1;]]></db:sql>
+        </db:select>
+        <set-variable value="#[[]]" doc:name="peliculas" doc:id="ebc1014e-52a9-45b8-a056-87291d8e87da" variableName="peliculas" />
+        <foreach doc:name="Recorrer peliculas" doc:id="049aa7f9-35b7-49d6-8eda-32163a7502e8" collection="#[payload]">
+            <set-variable value="#[%dw 2.0&#xA;output application/java&#xA;---&#xA;{&#xA; titulo: payload.titulo,&#xA; aniolanzamiento: payload.anioLanzamiento as String,&#xA; genero: payload.genero,&#xA; director: payload.director,&#xA; reparto: null&#xA;}]" doc:name="pelicula" doc:id="f0b0488e-cb9d-4c7a-af94-dfb43ee20cef" variableName="pelicula" />
+            <db:select doc:name="Obtener reparto" doc:id="3b9f14f7-ce84-4ec4-b963-5f619df9126b" config-ref="Database_Config_MySQL">
+                <db:sql><![CDATA[SELECT nombreActor, nombrePersonaje FROM reparto where id in (select reparto from pelicula_has_reparto where pelicula = :id);]]></db:sql>
+                <db:input-parameters><![CDATA[#[{'id' : payload.id}]]]></db:input-parameters>
+            </db:select>
+            <set-variable value="#[output application/java&#xA;---&#xA;{&#xA; titulo: vars.pelicula.titulo,&#xA; aniolanzamiento: vars.pelicula.aniolanzamiento,&#xA; genero: vars.pelicula.genero,&#xA; director: vars.pelicula.director,&#xA; reparto: payload map ( payload01 , indexOfPayload01 ) -&gt; {&#xA;  nombreactor: payload01.nombreActor,&#xA;  nombrepersonaje: payload01.nombrePersonaje&#xA; }&#xA;}]" doc:name="peliculaReparto" doc:id="208d50fb-be64-4390-b866-713ffee4406f" variableName="peliculaReparto" />
+            <ee:transform doc:name="Transform Message" doc:id="5959a5fa-6611-49cd-a8f3-d80bf354e073">
+                <ee:message />
+                <ee:variables>
+                    <ee:set-variable variableName="peliculas"><![CDATA[%dw 2.0
+
+output application/json
+
+---
+
+vars.peliculas + vars.peliculaReparto]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </foreach>
+        <set-payload value="#[vars.peliculas]" doc:name="Set Payload" doc:id="108d4def-e376-424b-844f-b7e7da850d33" />
+    </flow>
+    <flow name="get:\pelicula:peliculas-config">
+        <oauth2-provider:validate-token doc:name="Validate token" doc:id="7d78f19e-f8cf-4006-8d42-22d1acc5ccc5" config-ref="OAuth2_Provider_Config" scopes="#[['LEER']]" />
+        <logger level="INFO" message="get:\pelicula:peliculas-config" />
+        <set-variable value="#[attributes.queryParams.idPelicula]" doc:name="id" doc:id="3ca9eb83-ba1e-4d29-8825-2d0cf38ddeea" variableName="id" />
+        <db:query-single doc:name="Obtener pelicula" doc:id="61575ce9-391f-4a2c-92ad-2bbfd95cde8b" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[SELECT * FROM mule.pelicula where id = :id;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'id' : vars.id}]]]></db:input-parameters>
+        </db:query-single>
+        <set-variable value="#[%dw 2.0&#xA;output application/java&#xA;---&#xA;{&#xA; titulo: payload.titulo,&#xA; aniolanzamiento: payload.anioLanzamiento as String,&#xA; genero: payload.genero,&#xA; director: payload.director&#xA;}]" doc:name="pelicula" doc:id="9f9a69b4-36bd-4efa-8209-47f363883718" variableName="pelicula" />
+        <db:select doc:name="Obtener reparto" doc:id="82c11eda-6645-4680-ba15-efb486ba825f" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[SELECT nombreActor, nombrePersonaje FROM reparto where id in (select reparto from pelicula_has_reparto where pelicula = :id);]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'id' : payload.id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message" doc:id="98b3163b-3522-497e-9804-65bda29f42e6">
+            <ee:message />
+            <ee:variables>
+                <ee:set-variable variableName="pelicula"><![CDATA[%dw 2.0
+
+output application/json
+
+---
+
+vars.pelicula ++
+{
+	reparto : payload
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <set-payload value="#[vars.pelicula]" doc:name="Set Payload" doc:id="b3cb798f-ab4d-4913-8391-9d1df8308faf" />
+    </flow>
+    <flow name="post:\agregarpelicula:application\json:peliculas-config">
+        <set-variable value="#[payload]" doc:name="pelicula" doc:id="ed65fcf0-f6a0-482f-8088-6d402a68ea47" variableName="pelicula" />
+        <oauth2-provider:validate-token doc:name="Validate token" doc:id="1ee5c0de-049e-45a2-980e-0f6480130b11" config-ref="OAuth2_Provider_Config" scopes="#[['ESCRIBIR']]" />
+        <logger level="INFO" message="post:\agregarpelicula:application\json:peliculas-config" />
+        <db:stored-procedure doc:name="insertar pelicula" doc:id="e36d7b13-0095-4927-b2b8-c00d1e1c5e0a" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[call insertarPelicula(:in_titulo, :in_anioLanzamiento, :in_genero, :in_director, :out_resultado, :out_codigo, :out_id_pelicula);]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'in_titulo':vars.pelicula.titulo, 'in_anioLanzamiento':vars.pelicula.anioLanzamiento, 'in_genero':vars.pelicula.genero, 'in_director': vars.pelicula.director}]]]></db:input-parameters>
+            <db:output-parameters>
+                <db:output-parameter key="out_resultado" type="NVARCHAR" />
+                <db:output-parameter key="out_codigo" type="INTEGER" />
+                <db:output-parameter key="out_id_pelicula" type="INTEGER" />
+            </db:output-parameters>
+        </db:stored-procedure>
+        <choice doc:name="OK" doc:id="c1c00af2-ef0d-456a-be10-df479d850d8c">
+            <when expression="#[payload.out_codigo == 0]">
+                <set-variable value="#[payload]" doc:name="ResultadoPelicula" doc:id="fbe2a11b-ad08-4c0a-a7d6-5372b62ddcab" variableName="ResultadoPelicula" />
+                <foreach doc:name="Reparto" doc:id="0d919251-c55e-417e-aeca-b89f71c8634a" collection="#[vars.pelicula.reparto]">
+                    <db:stored-procedure doc:name="insertar reparto" doc:id="f39d1f28-bbb5-4861-9267-8eb85f169824" config-ref="Database_Config_MySQL">
+                        <db:sql><![CDATA[call insertarReparto(:in_id_titulo, :in_nombrePersonaje, :in_nombreActor, :out_resultado, :out_codigo);]]></db:sql>
+                        <db:input-parameters><![CDATA[#[{'in_id_titulo':vars.ResultadoPelicula.out_id_pelicula, 
+'in_nombrePersonaje':payload.nombrePersonaje,
+'in_nombreActor':payload.nombreActor}]]]></db:input-parameters>
+                        <db:output-parameters>
+                            <db:output-parameter key="out_resultado" type="NVARCHAR" />
+                            <db:output-parameter key="out_codigo" type="INTEGER" />
+                        </db:output-parameters>
+                    </db:stored-procedure>
+                </foreach>
+                <set-variable value="0" doc:name="Codigo" doc:id="530a1644-187d-4901-b799-524f34adc5e3" variableName="codigo" />
+                <set-variable value="OK" doc:name="mensaje" doc:id="edb39133-2e61-4380-a048-da6aed7824d4" variableName="mensaje" />
+            </when>
+            <otherwise>
+                <set-variable value="No se pudo registrar la pelicula" doc:name="mensaje" doc:id="f5bfa652-3312-4d30-a1fd-66b9360357fe" variableName="mensaje" />
+                <set-variable value="500" doc:name="codigo" doc:id="61e50170-00ef-4336-9303-a7eaade4dae0" variableName="codigo" />
+            </otherwise>
+        </choice>
+        <ee:transform doc:name="Transform Message" doc:id="5342a519-ee7c-481d-9492-10b5765961e6">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	codigo: vars.codigo as Number,
+	mensaje: vars.mensaje
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="delete:\eliminarpelicula:peliculas-config">
+        <oauth2-provider:validate-token doc:name="Validate token" doc:id="0ec60204-c8aa-4278-86d6-20b70b32e184" config-ref="OAuth2_Provider_Config" scopes="#[['ESCRIBIR']]" />
+        <logger level="INFO" message="delete:\eliminarPelicula:peliculas-config" />
+        <set-variable value="#[attributes.queryParams.idpelicula]" doc:name="id" doc:id="c024b449-bc63-4f26-8d4e-784e78f0f6ce" variableName="id" />
+        <db:delete doc:name="Borrar reparto" doc:id="3ea76ab4-7226-4d32-8397-c1e7e0a02d01" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[delete FROM pelicula_has_reparto where pelicula = :id;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'id' : vars.id}]]]></db:input-parameters>
+        </db:delete>
+        <db:delete doc:name="Borrar pelicula" doc:id="0c427842-e61b-4c96-ac89-2ec436354770" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[delete FROM pelicula where id = :id;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'id' : vars.id}]]]></db:input-parameters>
+        </db:delete>
+        <logger level="INFO" doc:name="Logger" doc:id="a8895ed0-9327-4c0a-af90-91dcc7c98d86" message="#[payload]" />
+        <set-variable value="0" doc:name="codigo" doc:id="7e9e7c28-0971-4150-951f-769f71db1fad" variableName="codigo" />
+        <set-variable value="ok" doc:name="mensaje" doc:id="83803ad2-586f-4436-b039-8c79da532bd2" variableName="mensaje" />
+        <ee:transform doc:name="Transform Message" doc:id="78e97484-1790-4244-81fd-5bc4b9456025">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	codigo: vars.codigo as Number,
+	mensaje: vars.mensaje
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\modificarpelicula:application\json:peliculas-config">
+        <set-variable value="#[payload]" doc:name="pelicula" doc:id="349d62af-75f1-441d-a406-8b437aca6a81" variableName="pelicula" />
+        <oauth2-provider:validate-token doc:name="Validate token" doc:id="ac0acf1a-7d60-414d-a007-10b9270b3be2" config-ref="OAuth2_Provider_Config" scopes="#[['ESCRIBIR']]" />
+        <logger level="INFO" message="put:\modificarpelicula:application\json:peliculas-config" />
+        <db:delete doc:name="Borrar reparto" doc:id="3fd49f90-fc92-4f3e-b879-2ff3a2ae677c" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[delete FROM pelicula_has_reparto where pelicula = :id;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'id' : vars.pelicula.id}]]]></db:input-parameters>
+        </db:delete>
+        <db:update doc:name="Actualizar pelicula" doc:id="88f0460e-87a4-41ef-bc03-72925c4ba00f" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[UPDATE pelicula SET titulo = :in_titulo, anioLanzamiento = :in_anioLanzamiento, genero = :in_genero, director = :in_director WHERE (id = :id);]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'in_titulo':vars.pelicula.titulo, 'in_anioLanzamiento':vars.pelicula.anioLanzamiento, 'in_genero':vars.pelicula.genero, 'in_director':vars.pelicula.director, 'id':vars.pelicula.id}]]]></db:input-parameters>
+        </db:update>
+        <foreach doc:name="Reparto" doc:id="1b1b7cc7-316b-40b4-a72e-d443b1c0964b" collection="#[vars.pelicula.reparto]">
+            <db:stored-procedure doc:name="insertar reparto" doc:id="32ade599-63f9-4fa6-ae56-f0b4f5bec812" config-ref="Database_Config_MySQL">
+                <db:sql><![CDATA[call insertarReparto(:in_id_titulo, :in_nombrePersonaje, :in_nombreActor, :out_resultado, :out_codigo);]]></db:sql>
+                <db:input-parameters><![CDATA[#[{'in_id_titulo':vars.pelicula.id, 
+'in_nombrePersonaje':payload.nombrePersonaje,
+'in_nombreActor':payload.nombreActor}]]]></db:input-parameters>
+                <db:output-parameters>
+                    <db:output-parameter key="out_resultado" type="NVARCHAR" />
+                    <db:output-parameter key="out_codigo" type="INTEGER" />
+                </db:output-parameters>
+            </db:stored-procedure>
+        </foreach>
+        <set-variable value="0" doc:name="Codigo" doc:id="81e2303c-0a85-424d-a740-ba17f60c35fd" variableName="codigo" />
+        <set-variable value="OK" doc:name="mensaje" doc:id="329d8c99-f75a-4546-b4a6-a88cee954e0a" variableName="mensaje" />
+        <ee:transform doc:name="Transform Message" doc:id="5f5e4e15-3ee0-4cce-89a1-38da755493f2">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	codigo: vars.codigo as Number,
+	mensaje: vars.mensaje
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\ingresarusuario:application\json:peliculas-config">
+        <logger level="INFO" message="post:\ingresarusuario:application\json:peliculas-config" />
+        <set-variable value="#[payload]" doc:name="Usuario" doc:id="49138344-73a7-4f8d-9436-3e01026ba928" variableName="Usuario" />
+        <db:insert doc:name="Insertar usuario" doc:id="82b2a61e-60c9-4378-906d-219723799595" config-ref="Database_Config_MySQL">
+            <db:sql><![CDATA[INSERT INTO usuario (usuario, contrasenia) VALUES (:in_usuario, :in_contrasenia);]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'in_usuario':payload.usuario, 'in_contrasenia':payload.contrasenia}]]]></db:input-parameters>
+        </db:insert>
+        <oauth2-provider:create-client doc:name="Create client" doc:id="736c401d-e219-410c-abf4-b1500e7b5227" config-ref="OAuth2_Provider_Config" clientId="#[vars.Usuario.usuario]" type="CONFIDENTIAL" secret="#[vars.Usuario.contrasenia]" clientName="#[vars.Usuario.usuario]" authorizedGrantTypes="#[[&quot;CLIENT_CREDENTIALS&quot;]]" scopes="#[vars.Usuario.permisos]" />
+        <ee:transform doc:name="Transform Message" doc:id="38987308-0654-4ca9-b077-44e3ad54e80b">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	codigo: 0,
+	mensaje: "OK"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="peliculasHeaderFlow" doc:id="6c09faff-ac53-4620-98fb-0390dfcc4435">
+        <set-variable value="${version.aplication}" doc:name="version" doc:id="630499a5-6b99-444a-86d8-1f3135e99d9f" variableName="version" />
+        <set-payload doc:name="Set Payload" doc:id="b715dd7f-de2a-4f25-9dfe-7afe2aed11bd" value="#[%dw 2.0&#xA;output application/java&#xA;---&#xA;{&#xA; &quot;Version-API&quot;: vars.version&#xA;}]" />
+    </flow>
+</mule>
